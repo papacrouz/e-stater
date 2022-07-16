@@ -11,6 +11,9 @@ import configparser
 # local module
 from main import *
 
+# start the node server
+_thread.start_new_thread(start_server, ())
+
 
 
 # Restrict to a particular path.
