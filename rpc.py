@@ -6,6 +6,7 @@ import base64
 import os
 import signal
 import configparser
+import _thread
 
 
 # local module
