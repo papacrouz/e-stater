@@ -22,8 +22,12 @@ import ecdsa
 
 from util import logg, hexlify, unhexlify
 
-
+import socket
+import messages
+from twisted.internet import reactor, protocol
+from twisted.internet.task import LoopingCall
 import _thread
+
 
 
 # generate keys lib, this should be replaced. 
@@ -913,14 +917,219 @@ def pubkey_to_verifykey(pub_key, curve=ecdsa.SECP256k1):
 
 
 
-def StartMining():
+_nodeid = messages.generate_nodeid()
 
-    ctx._miner_t = CoinMinerThread(None)
-    ctx._miner_t.start()
-    logg("[*] Starer miner thread started")
+###################################### Server ###################################
+
+class Client(threading.Thread):
+    def __init__(self, socket, address, id, signal):
+        threading.Thread.__init__(self)
+        self.socket = socket
+        self.address = address
+        self.id = id
+        self.signal = signal
+        self.state= "GETHELLO"
+
+        self.remote_nodeid = None
+        self.remote_node_protocol_version = None
+        self.myNodeid = _nodeid
+
+        self.lastPingSend = 0
+        self.lastPongReceived = 0 
+
+        _thread.start_new_thread(self.send_Ping, ())
+
+    
+    def __str__(self):
+        return str(self.id) + " " + str(self.address)
+    
+   
+    def run(self):
+        while self.signal:
+
+            data = self.socket.recv(2048)
+            for line in data.splitlines():
+                line = line.strip()
+                envelope = messages.read_envelope(line)
+                if self.state in ["GETHELLO", "SENTHELLO"]:
+                    # Force first message to be HELLO or crash
+                    if envelope['msgtype'] == 'hello':
+                        hello = messages.read_message(line)
+                        self.remote_nodeid = hello['nodeid']
+                        self.remote_node_protocol_version = hello["protocol"]
+
+                        if self.state == "GETHELLO":
+                            msg = messages.create_ackhello(self.myNodeid)
+                            self.socket.sendall(msg.encode())
+                            self.state = "READY"
+
+                else:
+                    if envelope['msgtype'] == 'sync':
+                        msg = messages.create_sync(self.myNodeid, ctx.bestHeight, ctx.bestHash)
+                        self.socket.sendall(msg.encode())
+
+                    elif envelope['msgtype'] == 'givemeblocks':
+                        data = messages.read_message(line)
+                        client_best_hash = data["besthash"]
+                        if client_best_hash in ctx.mapBlockIndex:
+                           # client seems to be run in corect chain 
+                           # sync him with our chain 
+                           
+                           for block in ctx.mapBlockIndex:
+                            if ctx.mapBlockIndex[block].hashPrevBlock == client_best_hash:
+                                block_network = ctx.mapBlockIndex[block]
+                                for tx in block_network.nTxs:
+                                    if not tx.IsCoinBase():
+                                        tx.nSignature = CsignaturesDB().ReadSignature(tx.GetHash())
+
+                                ret = block_network.serialize(out_type="hex")
+                                msg = messages.create_send_block(self.myNodeid, ret.decode("utf-8"))
+                                self.socket.sendall(msg.encode())
+
+                    elif envelope['msgtype'] == 'pong':
+                        self.lastPongReceived = int(time.time())
 
 
 
+
+
+    def send_Ping(self):
+        # send ping to client
+        while True:
+            pass
+
+            
+
+
+
+
+
+
+#Wait for new connections
+def newConnections(socket):
+    while True:
+        sock, address = socket.accept()
+        ctx.connections.append(Client(sock, address, ctx.total_connections, True))
+        ctx.connections[len(ctx.connections) - 1].start()
+        print("New connection at ID " + str(ctx.connections[len(ctx.connections) - 1]))
+        ctx.total_connections += 1
+
+
+
+
+################################  client ####################################################3
+
+class EchoClient(protocol.Protocol):
+  def __init__(self):
+    self._nodeid = messages.generate_nodeid()
+    self.lc_sync = LoopingCall(self.send_SYNC)
+
+    self._version = 1 
+    self._protocolVersion = 1
+
+
+
+
+  def write(self, line):
+    self.transport.write(line.encode() + b"\n")
+
+
+  def connectionMade(self):
+    # build a hello message 
+    hello = messages.create_hello(self._nodeid, self._version, self._protocolVersion)
+    self.write(hello)
+
+  def dataReceived(self, data):
+    print("")
+    print(data, "likossssss")
+    print("")
+    for line in data.splitlines():
+      line = line.strip()
+      envelope = messages.read_envelope(line)
+      if envelope['msgtype'] == 'ackhello':
+        # ask server if we need sync every 5 seconds
+        print("Client() - Got Hello message from server")
+        self.lc_sync.start(10, now=False)
+
+      elif envelope['msgtype'] == 'sync':
+        print("Client() - Got sync message from server")
+        data = messages.read_message(line)
+
+        if data["bestheight"] > ctx.bestHeight:
+          print("we are {} blocks behind, sync needed".format(data["bestheight"] - ctx.bestHeight))
+          # ask server for blocks 
+          msg = messages.create_ask_blocks(self._nodeid, ctx.bestHash)
+          self.write(msg)
+
+        elif data["bestheight"] == ctx.bestHeight:
+          print("we are synced with server, server height {} our {}".format(data["bestheight"], ctx.bestHeight))
+
+        elif data["bestheight"] < ctx.bestHeight:
+          print("holy shit server is behind {} blocks".format(ctx.bestHeight - data["bestheight"]))
+
+      elif envelope['msgtype'] == 'getblock':
+        data = messages.read_message(line)
+
+        block = Block()
+        block.deserialize(unhexlify(data["raw"].encode()))
+        if block.AcceptBlock(pnode=True):
+          print("block from peer accepted, new height is {}".format(ctx.bestHeight))
+
+      elif envelope['msgtype'] == 'ping':
+        print("got ping message from server")
+        msg = messages.create_pong(self._nodeid)
+        self.write(msg)
+
+
+
+
+
+
+
+
+  def send_SYNC(self):
+    print("[>] Asking if we need sync")
+    # Send a sync message to remote peer 
+    # A sync message contains our best height and our besthash
+    sync = messages.create_sync(self._nodeid, ctx.bestHeight, ctx.bestHash)
+    self.write(sync)
+
+
+
+class EchoFactory(protocol.ClientFactory):
+  def buildProtocol(self, addr):
+    return EchoClient()
+
+  def clientConnectionFailed(self, connector, reason):
+    print ("Connection failed.")
+    reactor.stop()
+
+  def clientConnectionLost(self, connector, reason):
+    print ("Connection lost.")
+    reactor.stop() 
+
+
+
+
+def start_server():
+    #Get host and port
+    host = "127.0.0.1"
+    port = 8750
+
+    #Create new server socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((host, port))
+    sock.listen(5)
+
+    #Create new thread to wait for connections
+    newConnectionsThread = threading.Thread(target = newConnections, args = (sock,))
+    newConnectionsThread.start()
+
+
+
+def start_client():
+    reactor.connectTCP("localhost", 8750, EchoFactory())
+    reactor.run() 
 
 
 def loadIndexes():
@@ -935,7 +1144,7 @@ def loadIndexes():
 
 
 if not loadIndexes():
-    sys.exit(logg("Error() Unable to load indexes."))
+    sys.exit("Error() Unable to load indexes.")
 
 signal(SIGINT, handler)
 
