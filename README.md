@@ -1,6 +1,6 @@
 # STATER
 
-A simple implementation of Blockchain writen in python, using stater you can generate new blocks (pow sha256) and create transactions, node is not functionallity working yet so the new transactions and blocks cant be broadcasted to other peers
+A simple implementation of Blockchain writen in python, using stater you can generate new blocks (pow sha256) and create transactions, node is not functionallity working yet, so only blocks containig conbase transactions only can be broadcasted between peers.
 
 # Discussion 
 
