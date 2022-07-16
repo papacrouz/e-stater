@@ -1,6 +1,6 @@
 # STATER
 
-A simple implementation of Blockchain writen in python, using stater you can generate new blocks (pow sha256) and create transactions, node is not implemented yet so the new transactions and blocks cant be broadcasted to other peers
+A simple implementation of Blockchain writen in python, using stater you can generate new blocks (pow sha256) and create transactions, node is not functionallity working yet so the new transactions and blocks cant be broadcasted to other peers
 
 # Discussion 
 
@@ -14,14 +14,15 @@ sudo pip3 install -r requirements.txt
 
 ```
 
-# RUN STATER 
+# RUN STATER GUI
 ``` bash
 cd e-stater
 # start the daemon 
-python3 rpc.py
+python3 stater-gui.py
 ```
+![This is an image](https://i.ibb.co/tC3WzMM/stater.png)
 
-# USAGE CURRENTLY SUPPORT ONLY RPC
+# STATER SUPPORT RPC
 
 # RPC
 
@@ -50,4 +51,4 @@ python3 rpc-cli.py getinfo -> Return info
 
 ## MINING
 
-Miner function is working, you can start mining by running ``` python3 rpc-cli.py startminer ``` command, you can check your minting proccess by running ``` python3 rpc-cli.py getinfo ``` if you are mining the response should have the miner field set to True, also you will notice your both wallet balance block height will start increment, the minting operation can be stoped using the ``` python3 rpc-cli.py stopminer ``` command
+Miner function is working, you can start mining by clicking the start mining button in stater-gui.py or using rpc   by running ``` python3 rpc-cli.py startminer ``` command, you can check your minting proccess by running ``` python3 rpc-cli.py getinfo ``` if you are mining the response should have the miner field set to True, also you will notice your both wallet balance block height will start increment, the minting operation can be stoped using the ``` python3 rpc-cli.py stopminer ``` command
