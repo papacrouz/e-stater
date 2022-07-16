@@ -20,6 +20,9 @@ cd e-stater
 # start the daemon 
 python3 stater-gui.py
 ```
+
+This will start client and automatically will connect to node located on peers.dat and will srart syncing, i've set an aws instance with mining enabled for testing, if you dont want connect to this node, just clear anything on peers,dat file, or add your own node, if you sync with my node and is there any issue please raise an issue here on github. 
+
 ![This is an image](https://i.ibb.co/tC3WzMM/stater.png)
 
 # STATER SUPPORT RPC
