@@ -1130,6 +1130,11 @@ def start_server():
 def start_client():
     reactor.connectTCP("localhost", 8750, EchoFactory())
     reactor.run() 
+    
+def StartMining():
+    ctx._miner_t = CoinMinerThread(None)
+    ctx._miner_t.start()
+    logg("[*] Stater miner thread started")
 
 
 def loadIndexes():
