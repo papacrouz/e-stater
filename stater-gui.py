@@ -30,8 +30,6 @@ class silme:
         self.binfo_ = StringVar()
 
 
-
-
         
 
 
@@ -43,15 +41,22 @@ class silme:
         self.mining()
 
 
+
+
         _thread.start_new_thread(self._update, ())
-        #_thread.start_new_thread(start_server, ())
-        #_thread.start_new_thread(start_client, ())
+        
+        with open("peers.dat", "r") as peers:
+            lines = peers.readlines()
+            
+            for peer in lines:
+                host, port = peer.strip().split(":")
+                _thread.start_new_thread(start_client, (host, int(port)))
 
 
 
 
     def blockchaininfo(self):
-        return "Height: %d | Difficulty: %f | Connections: %d" %(ctx.bestHeight, CalculateDiff(), ctx.total_connections)
+        return "Height: %d | Difficulty: %f | Incomming connections: %d | Outgoing connections: %d " %(ctx.bestHeight, CalculateDiff(), ctx.total_connections, ctx.connected_to)
         
 
     def _update(self):
@@ -96,7 +101,7 @@ class silme:
     def blockchain(self):
         blockchain_info = LabelFrame(self.frame, text="Blockchain Info", padx=5, pady=5)
         blockchain_info.grid(sticky=E+W)
-        Entry(self.frame, state="readonly", textvariable=self.binfo_, width=50).grid(in_=blockchain_info)
+        Entry(self.frame, state="readonly", textvariable=self.binfo_, width=90).grid(in_=blockchain_info)
 
 
 
@@ -143,14 +148,14 @@ class silme:
             if ctx.listfThreadRunning[0] == True:
                 ctx._miner_t.exit = True
                 ctx.fMiner = False
-                messagebox.showinfo("Mining...", "SilmeMiner stoped.") 
+                messagebox.showinfo("Mining...", "Stater stoped.") 
 
             
         elif self.startorstopmining_.get() == "Start":
             ctx.fMiner = True
             StartMining()
 
-            messagebox.showinfo("Mining...", "SilmeMiner Started.") 
+            messagebox.showinfo("Mining...", "StarterMiner Started.") 
 
 
 

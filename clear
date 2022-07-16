@@ -2,6 +2,6 @@
 
 
 # recursively removes all .pyc files 
-find . -type d -name __pycache__ -delete
+rm -rf  __pycache__
 # delete debug log file 
 rm -rf debug.log

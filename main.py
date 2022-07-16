@@ -1040,9 +1040,6 @@ class EchoClient(protocol.Protocol):
     self.write(hello)
 
   def dataReceived(self, data):
-    print("")
-    print(data, "likossssss")
-    print("")
     for line in data.splitlines():
       line = line.strip()
       envelope = messages.read_envelope(line)
@@ -1098,11 +1095,13 @@ class EchoClient(protocol.Protocol):
 
 class EchoFactory(protocol.ClientFactory):
   def buildProtocol(self, addr):
+    ctx.connected_to +=1
     return EchoClient()
 
   def clientConnectionFailed(self, connector, reason):
-    print ("Connection failed.")
-    reactor.stop()
+    # server is not running
+    pass
+    
 
   def clientConnectionLost(self, connector, reason):
     print ("Connection lost.")
@@ -1127,8 +1126,8 @@ def start_server():
 
 
 
-def start_client():
-    reactor.connectTCP("localhost", 8750, EchoFactory())
+def start_client(host, port):
+    reactor.connectTCP(host, port, EchoFactory())
     reactor.run() 
     
 def StartMining():
