@@ -843,6 +843,36 @@ def StaterMiner(t):
 
 
 
+def openConnections(t):
+
+    while True:
+        t.check_self_shutdown()
+        if t.exit:
+            break
+
+
+        with open("peers.dat", "r") as peers:
+            lines = peers.readlines()
+            
+            for peer in lines:
+                host, port = peer.strip().split(":")
+
+                if len(ctx.connectionsOpened) == 0:
+                    # try to connect to all nodes located in peers.dat file 
+                    _thread.start_new_thread(start_client, (host, int(port)))
+                else:
+                    for addr in ctx.connectionsOpened:
+                        if addr.host != host:
+                            if host not in ctx.connectionsFailed:
+                                # Connect only to nodes that we are not already connected, and 
+                                # not marked as failed.
+                                _thread.start_new_thread(start_client, (host, int(port)))
+
+        time.sleep(30)
+
+        
+
+
 
 
 
@@ -907,6 +937,30 @@ class CoinMinerThread(ExitedThread):
         ctx.listfThreadRunning[self.n] = False
 
     pass  
+
+
+
+
+class OpenConnectionsThread(ExitedThread):
+    def __init__(self, arg=None):
+        super(OpenConnectionsThread, self).__init__(arg, n=1)
+
+    def thread_handler2(self, arg):
+        self.thread_stater_openConnections(arg)
+
+    def thread_stater_openConnections(self, arg):
+        ctx.listfThreadRunning[self.n] = True
+        check_for_shutdown(self)
+        try:
+            ret = openConnections(self)
+            #logg("[*] Miner returned %s\n\n" % "true" if ret else"false")
+        except Exception as e:
+            #logg("[*] Miner()")
+            logg(e)
+            traceback.print_exc()
+        ctx.listfThreadRunning[self.n] = False
+
+    pass
 
 
 
@@ -1096,24 +1150,28 @@ class EchoClient(protocol.Protocol):
 class EchoFactory(protocol.ClientFactory):
   def buildProtocol(self, addr):
     ctx.connected_to +=1
+    ctx.connectionsOpened.append(addr)
     return EchoClient()
 
   def clientConnectionFailed(self, connector, reason):
-    # server is not running
-    pass
+    # This should be called when the connection to server fail to estabilished
+    ctx.connectionsFailed.append(connector.host) 
+    #reactor.stop()
     
 
   def clientConnectionLost(self, connector, reason):
-    print ("Connection lost.")
-    reactor.stop() 
+    # This should be called when the connection to server have estabilished
+    # and for droped unexpected
+    ctx.connected_to  = ctx.connected_to -1
+    #reactor.stop() 
 
 
 
 
 def start_server():
     #Get host and port
-    host = "0.0.0.0"
-    port = 8750
+    host = "127.0.0.1"
+    port = 8229
 
     #Create new server socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1125,15 +1183,22 @@ def start_server():
     newConnectionsThread.start()
 
 
-
-def start_client(host, port):
-    reactor.connectTCP(host, port, EchoFactory())
-    reactor.run() 
     
 def StartMining():
     ctx._miner_t = CoinMinerThread(None)
     ctx._miner_t.start()
     logg("[*] Stater miner thread started")
+
+
+
+def start_client(host, port):
+    reactor.connectTCP(host, port, EchoFactory())
+    reactor.run() 
+
+
+def StartOpenConnections():
+    ctx._connections_t = OpenConnectionsThread(None)
+    ctx._connections_t.start()
 
 
 def loadIndexes():
@@ -1150,5 +1215,9 @@ def loadIndexes():
 if not loadIndexes():
     sys.exit("Error() Unable to load indexes.")
 
-signal(SIGINT, handler)
 
+
+
+StartOpenConnections()
+
+signal(SIGINT, handler)

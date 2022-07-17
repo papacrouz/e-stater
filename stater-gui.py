@@ -44,13 +44,14 @@ class silme:
 
 
         _thread.start_new_thread(self._update, ())
+
+        #_thread.start_new_thread(start_server, ())
+        #_thread.start_new_thread(start_client, ())
+        #StartOpenConnections()
         
-        with open("peers.dat", "r") as peers:
-            lines = peers.readlines()
-            
-            for peer in lines:
-                host, port = peer.strip().split(":")
-                _thread.start_new_thread(start_client, (host, int(port)))
+
+
+        
 
 
 

@@ -66,3 +66,7 @@ total_connections = 0
 connected_to = 0
 
 nVersion = "0.0.1"
+
+
+connectionsOpened = []
+connectionsFailed = []
