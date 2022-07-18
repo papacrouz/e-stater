@@ -1259,8 +1259,8 @@ if not loadIndexes():
     sys.exit("Error() Unable to load indexes.")
 
 
-start_server()
+#start_server()
 
-#StartOpenConnections()
+StartOpenConnections()
 
 signal(SIGINT, handler)
