@@ -493,7 +493,7 @@ def CalculateDiff(nbits=None):
     # diff is minimun difficulty target / current_target 
     p = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
     if not nbits:
-        y = bits2target(GetNextWorkRequired())
+        y = bits2target(GetNextWorkRequired(plog=False))
     else:
         y = bits2target(nbits)
     return p / y
@@ -514,19 +514,24 @@ def GetCompact(n):
     return nCompact
 
 
-def GetNextWorkRequired():
+ef GetNextWorkRequired(plog=True):
 
     # latest block hash 
     pindexLast = ctx.bestHash
-
-    # Difficulty will change every 600 seconds or 10 minuntes
-    nTargetTimespan = 600
-
-    # We need a new block every 4 seconds
-    nTargetSpacing = 100
-
-    # That give us a interval 6 blocks
+    
+    # 10 minutes 
+    nTargetTimespan =  600
+    # We need 5 minutes between each block  
+    nTargetSpacing = 300
+    # Difficulty chances every 2 blocks
     nInterval = nTargetTimespan / nTargetSpacing
+
+
+    
+    # The above sets give as 2 blocks every 10 minutes, or 1 block every 5 minutes 
+    # If thhose 2 blocks took les than 10 minutes to be minting difficulty goes up
+    # if thoose 2 blocks took more than 10 minutes to be minting difficulty goes down.
+
 
     
     # if the last block height = 0 return the minimun diif
@@ -545,8 +550,8 @@ def GetNextWorkRequired():
 
     # so if the nActualTimespan is bigger the nTargetTimespan means that blocks are mined slowly, difficulty will be reduced,
     # if the nActualTimespan is lower than nTargetTimespan means that blocks are mined quick, difficulty will be increased
-
-    logg("nActualTimespan = {}  before bounds\n".format(nActualTimespan))
+    if plog:
+        logg("nActualTimespan = {}  before bounds\n".format(nActualTimespan))
 
     if nActualTimespan < nTargetTimespan/4:
         nActualTimespan = nTargetTimespan/4
@@ -561,13 +566,12 @@ def GetNextWorkRequired():
     if bnNew > consensus.bnProofOfWorkLimit:
         bnNew = consensus.bnProofOfWorkLimit
 
-    
-
-    logg("\n\n\nGetNextWorkRequired RETARGET *****\n")
-    logg("nTargetTimespan = {}    nActualTimespan = {}\n".format(nTargetTimespan, nActualTimespan))
-    logg("Last {} blocks time average was {}\n".format(nInterval, nActualTimespan))
-    logg("Before: %08x  %s\n" %(ctx.mapBlockIndex[ctx.bestHash].nBits, nActualTimespan,))
-    logg("After:  %08x  %s\n" %(GetCompact(int(bnNew)), nActualTimespan,))
+    if plog:
+        logg("\n\n\nGetNextWorkRequired RETARGET *****\n")
+        logg("nTargetTimespan = {}    nActualTimespan = {}\n".format(nTargetTimespan, nActualTimespan))
+        logg("Last {} blocks time average was {}\n".format(nInterval, nActualTimespan))
+        logg("Before: %08x  %s\n" %(ctx.mapBlockIndex[ctx.bestHash].nBits, nActualTimespan,))
+        logg("After:  %08x  %s\n" %(GetCompact(int(bnNew)), nActualTimespan,))
 
     return GetCompact(int(bnNew))
 
