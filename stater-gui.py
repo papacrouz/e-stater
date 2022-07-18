@@ -29,6 +29,8 @@ class silme:
         self.startorstopmining_ = StringVar()
         self.binfo_ = StringVar()
 
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
 
         
 
@@ -48,10 +50,17 @@ class silme:
         #_thread.start_new_thread(start_server, ())
         #_thread.start_new_thread(start_client, ())
         #StartOpenConnections()
-        
 
 
         
+
+
+    def on_closing(self):
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            ctx.fShutdown = True
+            time.sleep(1)
+            handler(True, False)
+            self.root.destroy()    
 
 
 

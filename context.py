@@ -70,3 +70,5 @@ nVersion = "0.0.1"
 
 connectionsOpened = []
 connectionsFailed = []
+
+newConnectionsThread = None

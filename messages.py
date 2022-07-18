@@ -80,6 +80,9 @@ def create_sync_op(nodeid, bestheight, besthash):
     msg = {'bestheight': bestheight, 'besthash':besthash}
     return make_envelope("sync_op", msg, nodeid)
 
+def create_relay_txs(nodeid, nodes):
+    msg = {'txs': nodes}
+    return make_envelope("relay_txs", msg, nodeid)
 
 
 def create_getaddr(nodeid):

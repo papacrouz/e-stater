@@ -29,6 +29,8 @@ from twisted.internet.task import LoopingCall
 import _thread
 
 
+mapping = {0:"miner", 1:"connections"}
+
 
 # generate keys lib, this should be replaced. 
 Ckey = Bitcoin(testnet=False)
@@ -54,6 +56,7 @@ def check_for_shutdown(t):
         if n != -1:
             ctx.listfThreadRunning[n] = False
             t.exit = True
+            print("Terminating {}".format(mapping[n]))
 
 
 
@@ -1026,7 +1029,7 @@ class Client(threading.Thread):
                         data = messages.read_message(line)
                         client_best_hash = data["besthash"]
                         if client_best_hash in ctx.mapBlockIndex:
-                           # client seems to be run in corect chain 
+                           # client seems to be run in correct chain 
                            # sync him with our chain 
                            
                            for block in ctx.mapBlockIndex:
@@ -1042,6 +1045,12 @@ class Client(threading.Thread):
 
                     elif envelope['msgtype'] == 'pong':
                         self.lastPongReceived = int(time.time())
+
+                    elif envelope['msgtype'] == "getaddr":
+                        with open("peers.dat", "r") as peers:
+                            lines = peers.readlines()
+                            msg = messages.create_addr(self.myNodeid, lines)
+                            self.socket.sendall(msg.encode())
 
 
 
@@ -1077,6 +1086,8 @@ class EchoClient(protocol.Protocol):
   def __init__(self):
     self._nodeid = messages.generate_nodeid()
     self.lc_sync = LoopingCall(self.send_SYNC)
+    self.lc_getaddr = LoopingCall(self.send_GetPeers)
+    self.lc_relay_txs = LoopingCall(self.send_RelayTransactions)
 
     self._version = 1 
     self._protocolVersion = 1
@@ -1101,6 +1112,9 @@ class EchoClient(protocol.Protocol):
         # ask server if we need sync every 5 seconds
         print("Client() - Got Hello message from server")
         self.lc_sync.start(10, now=False)
+        self.lc_getaddr.start(10, now=False)
+        self.lc_relay_txs.start(10, now=False)
+
 
       elif envelope['msgtype'] == 'sync':
         print("Client() - Got sync message from server")
@@ -1131,11 +1145,30 @@ class EchoClient(protocol.Protocol):
         msg = messages.create_pong(self._nodeid)
         self.write(msg)
 
+      elif envelope['msgtype'] == 'addr':
+        print("Got addreeses from node server")
+        data = messages.read_message(line)
+        nodes = data["nodes"]
+
+        nodesToAdd = []
+
+        with open("peers.dat", "r") as peers:
+            local = peers.readlines()
+            for node in nodes:
+                if node not in local:
+                    nodesToAdd.append(node.strip())
 
 
+        if len(nodesToAdd) > 0:
+            with open("peers.dat", "a") as peers:
+                peers.write("\n".join(map(str, nodesToAdd)))
 
+  
 
-
+  def send_GetPeers(self):
+    print("[>] Asking for peers")
+    msg = messages.create_getaddr(self._nodeid)
+    self.write(msg)
 
 
   def send_SYNC(self):
@@ -1144,6 +1177,15 @@ class EchoClient(protocol.Protocol):
     # A sync message contains our best height and our besthash
     sync = messages.create_sync(self._nodeid, ctx.bestHeight, ctx.bestHash)
     self.write(sync)
+
+  
+
+  def send_RelayTransactions(self):
+    print("[>] Sending our transactions to server")
+    if len(ctx.readForRelayTransactions) > 0:
+        msg = messages.create_relay_txs(self._nodeid, ctx.readForRelayTransactions)
+        self.write(sync)
+
 
 
 
@@ -1179,8 +1221,8 @@ def start_server():
     sock.listen(5)
 
     #Create new thread to wait for connections
-    newConnectionsThread = threading.Thread(target = newConnections, args = (sock,))
-    newConnectionsThread.start()
+    ctx.newConnectionsThread = threading.Thread(target = newConnections, args = (sock,))
+    ctx.newConnectionsThread.start()
 
 
     
@@ -1199,6 +1241,7 @@ def start_client(host, port):
 def StartOpenConnections():
     ctx._connections_t = OpenConnectionsThread(None)
     ctx._connections_t.start()
+    logg("[*] Stater open connections thread started")
 
 
 def loadIndexes():
@@ -1216,8 +1259,8 @@ if not loadIndexes():
     sys.exit("Error() Unable to load indexes.")
 
 
+start_server()
 
-
-StartOpenConnections()
+#StartOpenConnections()
 
 signal(SIGINT, handler)
