@@ -514,7 +514,7 @@ def GetCompact(n):
     return nCompact
 
 
-ef GetNextWorkRequired(plog=True):
+def GetNextWorkRequired(plog=True):
 
     # latest block hash 
     pindexLast = ctx.bestHash
@@ -785,9 +785,12 @@ class Block(object):
 
 
 
-def StaterMiner(t):
+def StaterMiner(t, msg=None):
 
     logg("Stater started")
+    
+    if msg:
+        logg(msg)
 
     key = GenerateNewKey()
 
@@ -837,6 +840,12 @@ def StaterMiner(t):
             t.check_self_shutdown()
             if t.exit:
                 logg("Miner got an exit signal")
+                break
+                
+            if pblock.hashPrevBlock != ctx.bestHash:
+                # Job Work change we should restart our miner here.
+                # Someone else miner have minting succesfully the block.
+                StaterMiner(t, msg="Miner restarted, new block detected on network")
                 break
 
             if int(pblock.GetHash(out_type="hex", header=True), 16) <= target:
