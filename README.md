@@ -2,7 +2,9 @@
 
 A simple implementation of Blockchain writen in python, using stater you can generate new blocks (pow sha256) and create transactions, node is not functionallity working yet, so only blocks containig conbase transactions only can be broadcasted between peers.
 
-# Discussion 
+# Notes
+
+There is no stable release. I'm currently working on it and needs a lot of work.
 
 
 
