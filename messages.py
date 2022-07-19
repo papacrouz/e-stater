@@ -72,8 +72,8 @@ def create_ask_blocks(nodeid, besthash):
     return make_envelope("givemeblocks", msg, nodeid)
 
 
-def create_send_block(nodeid, raw):
-    msg = {'raw': raw}
+def create_send_block(nodeid, raw, signatures):
+    msg = {'raw': raw, 'signatures': signatures}
     return make_envelope("getblock", msg, nodeid)
 
 def create_sync_op(nodeid, bestheight, besthash):

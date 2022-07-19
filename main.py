@@ -409,8 +409,7 @@ class Transaction(object):
 
     def IsMine(self):
         reciptien = hexlify(self.nTo)
-        return reciptien in ctx.mapKeys
-
+        return reciptien in ctx.
 
 
     def CheckTransaction(self, pnode=False):
@@ -419,11 +418,6 @@ class Transaction(object):
         if self.nValue >= ctx.MaxMoney:
             logg("CheckTransaction() - Failed, Transaction value too big")
             return False
-
-        if self.IsMine():
-            ret = CWalletDB().WriteTx(self)
-            if ret:
-                logg("Transaction {} added to wallet".format(self.GetHash("hex")))
 
 
         if not self.IsCoinBase():
@@ -441,6 +435,13 @@ class Transaction(object):
             if not vk.verify(self.nSignature, str(self.GetHash()).encode()):
                 logg("CheckTransaction() Verify signature for tx {} failed".format(self.GetHash("hex")))
                 return False
+
+
+        if self.IsMine():
+            ret = CWalletDB().WriteTx(self)
+            if ret:
+                logg("Transaction {} added to wallet".format(self.GetHash("hex")))
+
 
         return True
 
@@ -1051,15 +1052,20 @@ class Client(threading.Thread):
                            # client seems to be run in correct chain 
                            # sync him with our chain 
                            
+
+                           # signature to include in block message 
+                           signatures = []
+                           
                            for block in ctx.mapBlockIndex:
                             if ctx.mapBlockIndex[block].hashPrevBlock == client_best_hash:
                                 block_network = ctx.mapBlockIndex[block]
-                                for tx in block_network.nTxs:
-                                    if not tx.IsCoinBase():
-                                        tx.nSignature = CsignaturesDB().ReadSignature(tx.GetHash())
+                                if len(block_network.nTxs) > 1:
+                                    for x in range(1, len(block_network.nTxs)):
+                                        signatures.append(block_network.nTxs[x].nSignature.hex())
+
 
                                 ret = block_network.serialize(out_type="hex")
-                                msg = messages.create_send_block(self.myNodeid, ret.decode("utf-8"))
+                                msg = messages.create_send_block(self.myNodeid, ret.decode("utf-8"), signatures)
                                 self.socket.sendall(msg.encode())
 
                     elif envelope['msgtype'] == 'pong':
@@ -1154,8 +1160,21 @@ class EchoClient(protocol.Protocol):
       elif envelope['msgtype'] == 'getblock':
         data = messages.read_message(line)
 
+        signatures = data["signatures"]
+
+        
+
+
         block = Block()
         block.deserialize(unhexlify(data["raw"].encode()))
+
+
+        for tx in block.nTxs:
+            if not tx.IsCoinBase():
+                tx.nSignature = bytes.fromhex(signatures[0])
+                signatures.remove(signatures[0])
+
+
         if block.AcceptBlock(pnode=True):
           print("block from peer accepted, new height is {}".format(ctx.bestHeight))
 
