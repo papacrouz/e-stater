@@ -423,7 +423,7 @@ class Transaction(object):
         if not self.IsCoinBase():
             # check signature
             if self.nPrevTx not in ctx.mapTransactions:
-                logg("CheckTransaction() - Prev tx {} not found")
+                logg("CheckTransaction() - Prev tx {} not found".format(self.nPrevTx))
                 return False 
 
 
@@ -743,12 +743,28 @@ class Block(object):
                 if BlocksDB().WriteTxIndex(tx.GetHash("hex"), tx.nValue, 0):
                     if not tx.IsCoinBase():
                         # This is a looose transaction, a loose tx is a tx between 2 parties 
-                        # update chances on local memory 
+                        # update chances for input tx on local memory 
                         old = ctx.mapTxIndex[tx.nPrevTx]
                         del ctx.mapTxIndex[tx.nPrevTx]
                         ctx.mapTxIndex[tx.nPrevTx] = (old[0], int(old[0]) - tx.nValue) 
-                        # update chances on database 
+                         
                         prevTxIndex = unhexlify(hexser_uint256(tx.nPrevTx))
+
+                        # update chances for output on local memory
+                        ctx.mapTxIndex[tx.GetHash()] = (tx.nValue, 0)
+
+                        # Add transaction to blockchain transactions map
+                        ctx.mapTransactions[tx.GetHash()]  = tx
+
+
+                        if tx.IsMine():
+                            # This is a loose transaction and we are the reciptiens 
+                            # Add transaction to our wallet transactions map 
+                            ctx.mapWalletTransactions[tx.GetHash()] = tx
+
+
+
+                        # update chances on database
 
                         with ctx._env.begin() as txn:
                             for key, value in txn.cursor(db=ctx._blocks_db).iterprev():
@@ -768,12 +784,17 @@ class Block(object):
                     else:
                         if tx.IsCoinBase():
                             if tx.IsMine():
-                                # update wallet mem only with our coinbase txs 
+                                # This is a coinbase transaction inluded in a block that we mint 
+                                # Add transaction to our wallet transactions map 
                                 ctx.mapWalletTransactions[tx.GetHash()] = tx
+                                # Add transaction to blockchain transactions map
+                                ctx.mapTransactions[tx.GetHash()]  = tx
                             
-                            # map 0 as spend its coinbase 
+                            # As it is a coinbase tx, there is no spend only input..
+                            # Add transaction to mapTxIndex, no matter if is our or not.
                             ctx.mapTxIndex[tx.GetHash()] = (tx.nValue, 0)   
-                            ctx.mapTransactions[tx.GetHash()]  = tx                       
+                            # Add transaction to blockchain transactions map
+                            ctx.mapTransactions[tx.GetHash()]  = tx                  
                 else:
                     return False 
 
@@ -1067,6 +1088,10 @@ class Client(threading.Thread):
                                 ret = block_network.serialize(out_type="hex")
                                 msg = messages.create_send_block(self.myNodeid, ret.decode("utf-8"), signatures)
                                 self.socket.sendall(msg.encode())
+
+                    elif envelope['msgtype'] == 'relay_txs':
+                        logg("Server() Got a tx from client")
+
 
                     elif envelope['msgtype'] == 'pong':
                         self.lastPongReceived = int(time.time())
