@@ -39,7 +39,7 @@ mapTxIndex = {}
 COIN = 100000000
 MaxMoney = 21000000 * COIN
 
-readForRelayTransactions = []
+memPool = []
 
 hashGenesisBlock = b"00000f9ab97717c5d1101811f9a805534436048aa88a5bb7e1bf9c854b4fee44"
 

@@ -344,7 +344,7 @@ def SendMoney(to, amount):
         tx = Transaction()
         tx.nPrevTx = txindex
         tx.nValue = amount 
-        tx.nTo = to.encode()
+        tx.nTo = unhexlify(to)
         # get the input pubkey key owner 
         owner = ctx.mapTransactions[txindex].nTo
         # get the private key 
@@ -357,7 +357,7 @@ def SendMoney(to, amount):
 
         tx.nSignature = signature
 
-        ctx.readForRelayTransactions.append(tx)
+        ctx.memPool.append(tx)
 
         return True 
     return False
@@ -777,6 +777,12 @@ class Block(object):
                     return False 
 
 
+        for tx in self.nTxs:
+            # remove transactions from mempool.
+            if tx in ctx.memPool:
+                ctx.memPool.remove(tx)
+
+
         return True
 
 
@@ -817,7 +823,7 @@ def StaterMiner(t, msg=None):
 
 
         # add rest of txs, if exists 
-        for tx in ctx.readForRelayTransactions:
+        for tx in ctx.memPool:
             pblock.nTxs.append(tx)
 
         pblock.hashMerkleRoot = pblock.BuildMerkleTree()
@@ -1195,8 +1201,8 @@ class EchoClient(protocol.Protocol):
 
   def send_RelayTransactions(self):
     print("[>] Sending our transactions to server")
-    if len(ctx.readForRelayTransactions) > 0:
-        msg = messages.create_relay_txs(self._nodeid, ctx.readForRelayTransactions)
+    if len(ctx.memPool) > 0:
+        msg = messages.create_relay_txs(self._nodeid, ctx.memPool)
         self.write(sync)
 
 
