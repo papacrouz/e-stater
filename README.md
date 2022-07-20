@@ -20,7 +20,7 @@ sudo pip3 install -r requirements.txt
 ``` bash
 cd e-stater
 # start the daemon 
-python3 stater-gui.py
+python3 run.py
 ```
 
 This will start client and automatically will connect to node located on peers.dat and will srart syncing, i've set an aws instance with mining enabled for testing, if you dont want connect to this node, just clear anything on peers,dat file, or add your own node, if you sync with my node and is there any issue please raise an issue here on github. 
@@ -33,6 +33,8 @@ This will start client and automatically will connect to node located on peers.d
 
 Stater rpc commands, note you should run python3 rpc.py first 
 ``` python 
+
+python3 rpc-cli.py stop -> This will stop the remote rpc server 
 python3 rpc-cli.py getbestheight -> Return the best height in the longest chain.
 python3 rpc-cli.py getbesthash -> Return the best hash in the longest chain.
 python3 rpc-cli.py getnewkey   -> Return a new key to receive coins 
