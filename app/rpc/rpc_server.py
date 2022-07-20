@@ -17,6 +17,8 @@ from app.block.key.action import GenerateNewKey
 
 import app.block.action as blockaction
 import app.net.action as networkaction
+from app.net.action import StartMining
+
 
 
 print ("Loading wallet & keys...")
