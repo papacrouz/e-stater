@@ -12,10 +12,20 @@ from tkinter import simpledialog
 from datetime import datetime
 import _thread
 import tkinter.messagebox
+import time
 
-from main import *
+from app import context as ctx
+from app.utils.baseutil import CalculateDiff
+from app.block.txaction import getWalletBalance
+from app.block.key.action import GenerateNewKey
+from app import thread
+from app.net.action import StartMining
 
-class silme:
+
+
+
+
+class Stater:
 
     def __init__(self, root):
         self.root = root
@@ -58,8 +68,10 @@ class silme:
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
             ctx.fShutdown = True
+            time.sleep(0.2)
+            if ctx.hlistenSocket is not None: ctx.hlistenSocket.close()
+            print ("exiting!")
             time.sleep(1)
-            handler(True, False)
             self.root.destroy()    
 
 
@@ -166,16 +178,3 @@ class silme:
             StartMining()
 
             messagebox.showinfo("Mining...", "StarterMiner Started.") 
-
-
-
-
-if __name__ == "__main__":
-
-   
-    root = Tk()
-    root.geometry("655x330+350+100")
-    silme(root=root)
-    root.title("Stater Client")
-    root.mainloop()
-

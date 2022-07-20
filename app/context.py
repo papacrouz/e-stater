@@ -1,6 +1,6 @@
 import lmdb
 import os
-from util import *
+from app.utils.baseutil import GetAppDir
 import threading
 
 if not os.path.exists(GetAppDir()):
@@ -10,6 +10,18 @@ if not os.path.exists(GetAppDir()):
 		sys.exit(logg("Unable to create data directory"))
 	else:
 		pass
+
+
+
+host = "127.0.0.1"
+port = 8229
+
+err = ""
+
+
+hlistenSocket = None
+
+listWorkThreads = list()
 
 _env = lmdb.open(GetAppDir() + '/stater.lmdb', max_dbs=10) 
 _blocks_db = _env.open_db(b'blocks')

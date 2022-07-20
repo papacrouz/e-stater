@@ -12,7 +12,7 @@ rpc_port = "8901"
 
 
 availables_cmds = ["getpid", "getbestheight", "getbesthash", "getdifficulty", "getinfo", "getbalance", "getnewkey",
-                   "startminer", "stopminer", "minerstatus"]
+                   "startminer", "stopminer", "minerstatus", "stop"]
 
  
 cmds = """
@@ -21,16 +21,13 @@ cmds = """
 "getbesthash - Reurn the best hash in the longest chain"
 "getdifficulty - Reurn the current difficulty"
 "getinfo - Return info
-
 "--------------  Wallet --------------"
 "getbalance - Return wallet balance"
 "getnewkey - Reurn a new zap key"
-
 "--------------  Mining --------------"
 "startminer - Starts miner"
 "stopminer - Stops miner"
 "minerstatus - Return miner status
-
 """
 
 server = xmlrpc.client.ServerProxy('http://{}:{}@localhost:{}'.format(rpc_user, rpc_pass, rpc_port))
