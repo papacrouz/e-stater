@@ -7,8 +7,8 @@
 from app import context as ctx
 from app.block.tx.tx import Transaction
 from app.db.db import BlocksDB
-from app.utils.serdeser import ser_int, ser_uint256, ser_uint, deser_uint256, uint256_from_str, deser_int, deser_uint, deser_list, ser_list
-from app.utils.baseutil import GetNextWorkRequired, Hash, hexlify, unhexlify
+from app.utils.serdeser import ser_int, ser_uint256, ser_uint, deser_uint256, uint256_from_str, deser_int, deser_uint, deser_list, ser_list, hexser_uint256
+from app.utils.baseutil import GetNextWorkRequired, Hash, hexlify, unhexlify, logg
 import io
 
 

@@ -16,7 +16,7 @@ import time
 
 from app import context as ctx
 from app.utils.baseutil import CalculateDiff
-from app.block.txaction import getWalletBalance
+from app.block.txaction import getWalletBalance, SendMoney
 from app.block.key.action import GenerateNewKey
 from app import thread
 from app.net.action import StartMining
