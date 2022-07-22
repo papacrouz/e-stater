@@ -36,7 +36,7 @@ mapKeysLock = threading.RLock()
 
 mapWalletTransactions = {}
 mapWalletTransactionsLock = threading.RLock()
-
+mapTxIndexLock = threading.RLock()
 
 mapBlockIndex = {}
 mapHeight = {}

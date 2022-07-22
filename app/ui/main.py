@@ -25,6 +25,7 @@ from app.net.action import StartMining
 
 
 
+
 class Stater:
 
     def __init__(self, root):
@@ -40,9 +41,6 @@ class Stater:
         self.binfo_ = StringVar()
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-
-        
 
 
         self.addr()

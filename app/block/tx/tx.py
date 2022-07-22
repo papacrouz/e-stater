@@ -64,9 +64,11 @@ class Transaction(object):
 
 
 
+
     def IsMine(self):
         reciptien = hexlify(self.nTo)
         return reciptien in ctx.mapKeys
+
 
 
 
