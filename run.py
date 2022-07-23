@@ -26,7 +26,7 @@ if not blockaction.loadBlockIndex():
 	ctx.err += "Error loading blockchain\n"
 
 
-if not networkaction.startNode(client=True, server=False):
+if not networkaction.startNode(client=False, server=True):
 	ctx.err += "Error starting node\n"
 
 

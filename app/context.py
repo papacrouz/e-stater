@@ -82,5 +82,5 @@ nVersion = "0.0.1"
 
 connectionsOpened = []
 connectionsFailed = []
-
+server_thread = None
 newConnectionsThread = None

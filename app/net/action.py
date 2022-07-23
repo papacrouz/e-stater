@@ -32,7 +32,7 @@ def startNode(client=False, server=False):
         sock.listen(5)
 
         #Create new thread to wait for connections
-        ctx.newConnectionsThread = threading.Thread(target = newConnections, args = (sock,))
+        ctx.newConnectionsThread = thread.AcceptConnectionsThread(sock)
         ctx.newConnectionsThread.start()
 
         ctx.listWorkThreads.append((ctx.newConnectionsThread, "node_thread"))

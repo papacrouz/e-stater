@@ -7,6 +7,7 @@ from app.net import client
 from app.utils.baseutil import logg
 from app.block.miner import StaterMiner
 from app.net.client import EchoClient
+from app.net.server import newConnections
 
 
 from signal import signal, SIGINT
@@ -16,13 +17,25 @@ import threading
 import traceback
 import _thread
 import time
+import sys
+
+
+opMapper = {0: "Miner thread", 1: "Client thread", 2: "Server thread"}
+
+
+shutdownLock = threading.Lock()
 
 
 
+def shutdown():
+    with shutdownLock:
+        if ctx.fShutdown:
+            return
 
-def handler(signal_received, frame):
-    # Handle any cleanup here
-    ctx.fShutdown = True
+        ctx.fShutdown = True
+        if ctx.hlistenSocket is not None:
+            ctx.hlistenSocket.close()
+        
 
 
 
@@ -34,6 +47,10 @@ def check_for_shutdown(t):
         if n != -1:
             ctx.listfThreadRunning[n] = False
             t.exit = True
+            print("Exiting {}".format(opMapper[n]))
+
+
+
 
 
 
@@ -120,6 +137,31 @@ class OpenConnectionsThread(ExitedThread):
         ctx.listfThreadRunning[self.n] = False
 
     pass
+
+
+
+
+class AcceptConnectionsThread(ExitedThread):
+    def __init__(self, arg=None):
+        super(AcceptConnectionsThread, self).__init__(arg, n=2)
+
+    def thread_handler2(self, arg):
+        self.thread_stater_acceptConnections(arg)
+
+    def thread_stater_acceptConnections(self, sock):
+        ctx.listfThreadRunning[self.n] = True
+        check_for_shutdown(self)
+        try:
+            ctx.server_thread = threading.Thread(target = newConnections, args = (sock,))
+            ctx.server_thread.start()
+        except Exception as e:
+            logg(e)
+            traceback.print_exc()
+        ctx.listfThreadRunning[self.n] = False
+
+    pass
+
+
 
 
 def start_client(host, port):

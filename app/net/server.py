@@ -113,6 +113,9 @@ class Client(threading.Thread):
 #Wait for new connections
 def newConnections(socket):
     while True:
+        if ctx.fShutdown:
+            break 
+            
         sock, address = socket.accept()
         ctx.connections.append(Client(sock, address, ctx.total_connections, True))
         ctx.connections[len(ctx.connections) - 1].start()

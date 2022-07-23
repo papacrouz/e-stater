@@ -21,6 +21,9 @@ from app.block.key.action import GenerateNewKey
 from app import thread
 from app.net.action import StartMining
 
+import threading
+import sys
+
 
 
 
@@ -53,7 +56,8 @@ class Stater:
 
 
 
-        _thread.start_new_thread(self._update, ())
+        self.ptr = threading.Thread(target=self._update, name='update')
+        self.ptr.start()
 
         #_thread.start_new_thread(start_server, ())
         #_thread.start_new_thread(start_client, ())
@@ -65,12 +69,13 @@ class Stater:
 
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
-            ctx.fShutdown = True
-            time.sleep(0.2)
-            if ctx.hlistenSocket is not None: ctx.hlistenSocket.close()
-            print ("exiting!")
-            time.sleep(1)
-            self.root.destroy()    
+            thread.shutdown()
+            self.root.destroy()
+
+            
+
+            
+            
 
 
 
@@ -86,7 +91,7 @@ class Stater:
             self.balance_.set(getWalletBalance() / ctx.COIN)
             self.binfo_.set(self.blockchaininfo())
             self.startorstopmining_.set(self.sosm())
-            time.sleep(3)
+            
 
 
     def sosm(self):
