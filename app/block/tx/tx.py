@@ -71,6 +71,33 @@ class Transaction(object):
 
 
 
+    def checkInput(self):
+        # does the input tx has enough coins ??
+        old = ctx.mapTxIndex[self.nPrevTx]
+        # total received 
+        total_received = old[0] 
+        # total spend
+        total_spend = old[1]  
+
+        # the available coins of the prev tx that the payer tries to spend
+        nAvailableCoins = int(total_received) - int(total_spend)
+
+        if total_received == total_spend:
+            # payer have spend all their coins of the given txindex
+            logg("Transaction(checkInput) PrevTxIndex {} for loose transaction has spend all their coins".format(self.nPrevTx))
+            return False 
+
+
+
+        if nAvailableCoins < self.nValue:
+            # payer available coins are not enough
+            logg("Transaction(checkInput) PrevTxIndex {} for loose transaction has not enough coins to spend".format(self.nPrevTx))
+            return False 
+
+        return True
+
+
+
 
     def CheckTransaction(self, pnode=False):
 
@@ -87,6 +114,13 @@ class Transaction(object):
                 return False 
 
 
+            # This is a looose transaction, a loose tx is a tx between 2 parties.
+            # Does we have the payer input tx ?
+            if self.nPrevTx not in ctx.mapTxIndex:
+                logg("AcceptBlock() PrevTxIndex {} for losse transaction not found".format(self.nPrevTx))
+                return False 
+
+
             owner = hexlify(ctx.mapTransactions[self.nPrevTx].nTo)
             vk = pubkey_to_verifykey(owner)
 
@@ -94,6 +128,11 @@ class Transaction(object):
             # this transaction must be signed with the private key of the input tx hash 
             if not vk.verify(self.nSignature, str(self.GetHash()).encode()):
                 logg("CheckTransaction() Verify signature for tx {} failed".format(self.GetHash("hex")))
+                return False
+
+
+            if not self.checkInput():
+                logg("CheckTransaction() checkInput failed for tx {} failed".format(self.GetHash("hex")))
                 return False
 
 

@@ -50,7 +50,7 @@ def loadBlockIndex():
                     ctx.mapTransactions[tx.GetHash()] = tx 
 
             if ptr[0] == b"txindex":
-                txHash = uint256_from_str(ptr[1])
+                txHash = int(ptr[1])
                 txReceived = ptr_value[1]
                 txSpend = ptr_value[3]
 

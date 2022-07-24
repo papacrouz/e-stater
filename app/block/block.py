@@ -169,14 +169,8 @@ class Block(object):
 
         if BlocksDB().WriteBlock(self):
             for tx in self.nTxs:
-                if BlocksDB().WriteTxIndex(tx.GetHash("hex"), tx.nValue, 0):
+                if BlocksDB().WriteTxIndex(tx.GetHash(), tx.nValue, 0):
                     if not tx.IsCoinBase():
-
-                        # This is a looose transaction, a loose tx is a tx between 2 parties.
-                        # Does we have the payer input tx ?
-                        if tx.nPrevTx not in ctx.mapTxIndex:
-                            logg("AcceptBlock() PrevTxIndex {} for losse transaction not found".format(tx.nPrevTx))
-                            return False 
                         
 
                         # does the input tx has enough coins ??
@@ -186,30 +180,12 @@ class Block(object):
                         # total spend
                         total_spend = old[1]  
 
-                        # the available coins of the prev tx that the payer tries to spend
-                        nAvailableCoins = int(total_received) - int(total_spend)
-
-
-
-                        if total_received == total_spend:
-                            # payer have spend all their coins of the given txindex
-                            logg("AcceptBlock() PrevTxIndex {} for loose transaction has spend all their coins".format(tx.nPrevTx))
-                            return False 
-
-
-
-                        if nAvailableCoins < tx.nValue:
-                            # payer available coins are not enough
-                            logg("AcceptBlock() PrevTxIndex {} for loose transaction has not enough coins to spend".format(tx.nPrevTx))
-                            return False 
-
 
                         # delete the nPrevTx from mapTxIndex memory 
                         del ctx.mapTxIndex[tx.nPrevTx]
                         # update the mapTxIndex memoryu with the new changes 
                         ctx.mapTxIndex[tx.nPrevTx] = (total_received, int(total_spend) + tx.nValue) 
 
-                        prevTxIndex = unhexlify(hexser_uint256(tx.nPrevTx))
 
                         # update chances for output on local memory
                         ctx.mapTxIndex[tx.GetHash()] = (tx.nValue, 0)
@@ -227,21 +203,13 @@ class Block(object):
 
                         # update chances on database
 
-                        with ctx._env.begin() as txn:
-                            for key, value in txn.cursor(db=ctx._blocks_db).iterprev():
-                                ptr = key.split(b":")
-                                ptr_value = value.split(b":")
-
-                                if ptr[0] == b"txindex":
-                                    txHash = ptr[1]
-                                    if txHash.startswith(prevTxIndex):
-                                        # delete this 
-                                        with ctx._env.begin(write=True, db=ctx._blocks_db) as txn:
-                                            key = b"txindex:" + txHash
-                                            value = b"received:" + str(total_received).encode() + b":spend:" + str(int(total_spend) + tx.nValue).encode()
-                                            if txn.delete(key):
-                                                if not txn.put(key, value):
-                                                    return False
+                        with ctx._env.begin(write=True, db=ctx._blocks_db) as txn:
+                            key = b"txindex:" + str(tx.nPrevTx).encode()
+                            value = b"received:" + str(total_received).encode() + b":spend:" + str(int(total_spend) + tx.nValue).encode()
+                            if txn.delete(key):
+                                if not txn.put(key, value):
+                                    return False
+                                        
                     else:
                         if tx.IsCoinBase():
                             if tx.IsMine():

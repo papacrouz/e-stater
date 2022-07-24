@@ -93,6 +93,6 @@ class BlocksDB(CDB):
 
 
     def WriteTxIndex(self, txhash, received, spend):
-        key = b"txindex:" + txhash.encode()
+        key = b"txindex:" + str(txhash).encode()
         value = b"received:" + str(received).encode() + b":spend:" + str(spend).encode()
         return self.Write(key, value)
